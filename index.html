@@ -5,28 +5,851 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Organizator termina za Masaže Tajana">
   <meta name="theme-color" content="#2563eb">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/png" href="/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="icon-192.png">
   <title>Masaže Tajana</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
   <div id="root"></div>
   
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
   <script type="text/babel">
-    // OVDE KOPIRAJ CEO KOD IZ ARTIFAKTA (React komponentu)
+    const { useState, useEffect } = React;
+    const { Calendar, Clock, Users, TrendingUp, Plus, X, Bell, Phone, MessageSquare, Edit2, Trash2, Moon, Sun, ChevronLeft, ChevronRight, Ban, Settings } = window.lucide;
+
+    // Importuj Lucide ikonice
+    lucide.createIcons();
+  </script>
+
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script type="text/babel">
+const MasazeTajana = () => {
+  const [activeTab, setActiveTab] = useState('calendar');
+  const [appointments, setAppointments] = useState([]);
+  const [blockedPeriods, setBlockedPeriods] = useState([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showSplash, setShowSplash] = useState(true);
+  const [darkMode, setDarkMode] = useState(true);
+
+  const [newAppointment, setNewAppointment] = useState({
+    clientName: '',
+    phone: '',
+    date: '',
+    time: '',
+    notes: ''
+  });
+
+  const [newBlock, setNewBlock] = useState({
+    type: 'recurring',
+    startDate: '',
+    endDate: '',
+    startTime: '',
+    endTime: '',
+    days: [],
+    description: ''
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 2500);
+    loadData();
+    registerServiceWorker();
+    checkUpcomingAppointments();
+    
+    const interval = setInterval(checkUpcomingAppointments, 60000);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const registerServiceWorker = async () => {
+    if ('serviceWorker' in navigator) {
+      try {
+        console.log('Service Worker ready for registration');
+      } catch (error) {
+        console.log('Service Worker registration failed:', error);
+      }
+    }
+  };
+
+  const loadData = () => {
+    const savedAppts = localStorage.getItem('massageAppointments');
+    const savedBlocked = localStorage.getItem('blockedPeriods');
+    const savedTheme = localStorage.getItem('darkMode');
+    
+    if (savedAppts) setAppointments(JSON.parse(savedAppts));
+    if (savedBlocked) setBlockedPeriods(JSON.parse(savedBlocked));
+    if (savedTheme !== null) setDarkMode(savedTheme === 'true');
+  };
+
+  const saveAppointments = (appts) => {
+    localStorage.setItem('massageAppointments', JSON.stringify(appts));
+    setAppointments(appts);
+  };
+
+  const saveBlockedPeriods = (periods) => {
+    localStorage.setItem('blockedPeriods', JSON.stringify(periods));
+    setBlockedPeriods(periods);
+  };
+
+  const toggleTheme = () => {
+    const newMode = !darkMode;
+    setDarkMode(newMode);
+    localStorage.setItem('darkMode', newMode.toString());
+  };
+
+  const checkUpcomingAppointments = () => {
+    const now = new Date();
+    appointments.forEach(apt => {
+      const aptDateTime = new Date(`${apt.date}T${apt.time}`);
+      const diffMs = aptDateTime - now;
+      const diffMins = Math.floor(diffMs / 60000);
+
+      if (diffMins === 60 && 'Notification' in window && Notification.permission === 'granted') {
+        new Notification('Masaže Tajana - Podsetnik', {
+          body: `${apt.clientName} ima termin za ${diffMins} minuta`,
+        });
+      }
+    });
+  };
+
+  const requestNotificationPermission = async () => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      await Notification.requestPermission();
+    }
+  };
+
+  const pickContact = async () => {
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+      try {
+        const props = ['name', 'tel'];
+        const opts = { multiple: false };
+        const contacts = await navigator.contacts.select(props, opts);
+        
+        if (contacts.length > 0) {
+          const contact = contacts[0];
+          setNewAppointment({
+            ...newAppointment,
+            clientName: contact.name?.[0] || '',
+            phone: contact.tel?.[0] || ''
+          });
+        }
+      } catch (err) {
+        console.log('Contact picker error:', err);
+      }
+    } else {
+      alert('Pretraživanje kontakata nije dostupno na ovom uređaju');
+    }
+  };
+
+  const isTimeBlocked = (dateStr, timeStr) => {
+    const date = new Date(dateStr);
+    const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][date.getDay()];
+    
+    return blockedPeriods.some(period => {
+      if (period.type === 'recurring') {
+        if (!period.days.includes(dayOfWeek)) return false;
+        
+        const time = parseInt(timeStr.replace(':', ''));
+        const start = parseInt(period.startTime.replace(':', ''));
+        const end = parseInt(period.endTime.replace(':', ''));
+        
+        return time >= start && time < end;
+      } else {
+        if (dateStr < period.startDate || dateStr > period.endDate) return false;
+        
+        const time = parseInt(timeStr.replace(':', ''));
+        const start = parseInt(period.startTime.replace(':', ''));
+        const end = parseInt(period.endTime.replace(':', ''));
+        
+        return time >= start && time < end;
+      }
+    });
+  };
+
+  const addBlockedPeriod = () => {
+    if (newBlock.type === 'recurring' && newBlock.days.length === 0) {
+      alert('Izaberite bar jedan dan u nedelji');
+      return;
+    }
+    
+    if (newBlock.type === 'oneTime' && (!newBlock.startDate || !newBlock.endDate)) {
+      alert('Unesite početni i krajnji datum');
+      return;
+    }
+    
+    if (!newBlock.startTime || !newBlock.endTime) {
+      alert('Unesite vreme početka i završetka');
+      return;
+    }
+
+    const period = {
+      id: Date.now(),
+      ...newBlock
+    };
+
+    saveBlockedPeriods([...blockedPeriods, period]);
+    setShowBlockModal(false);
+    setNewBlock({
+      type: 'recurring',
+      startDate: '',
+      endDate: '',
+      startTime: '',
+      endTime: '',
+      days: [],
+      description: ''
+    });
+  };
+
+  const deleteBlockedPeriod = (id) => {
+    if (confirm('Da li ste sigurni da želite da obrišete ovaj blokirani period?')) {
+      saveBlockedPeriods(blockedPeriods.filter(p => p.id !== id));
+    }
+  };
+
+  const toggleDay = (day) => {
+    if (newBlock.days.includes(day)) {
+      setNewBlock({...newBlock, days: newBlock.days.filter(d => d !== day)});
+    } else {
+      setNewBlock({...newBlock, days: [...newBlock.days, day]});
+    }
+  };
+
+  const addAppointment = () => {
+    if (!newAppointment.clientName || !newAppointment.phone || !newAppointment.date || !newAppointment.time) {
+      alert('Molimo popunite sva obavezna polja');
+      return;
+    }
+
+    if (isTimeBlocked(newAppointment.date, newAppointment.time)) {
+      if (!confirm('Ovaj termin je u blokirano vreme. Da li ipak želite da zakažete?')) {
+        return;
+      }
+    }
+
+    const appointment = {
+      id: Date.now(),
+      ...newAppointment
+    };
+
+    const updated = [...appointments, appointment];
+    saveAppointments(updated);
+    
+    sendSMS(appointment, 'confirmation');
+    
+    setShowAddModal(false);
+    setNewAppointment({
+      clientName: '',
+      phone: '',
+      date: '',
+      time: '',
+      notes: ''
+    });
+  };
+
+  const deleteAppointment = (id) => {
+    if (confirm('Da li ste sigurni da želite da obrišete ovaj termin?')) {
+      const updated = appointments.filter(apt => apt.id !== id);
+      saveAppointments(updated);
+    }
+  };
+
+  const sendSMS = (appointment, type) => {
+    const messages = {
+      confirmation: `Pozdrav ${appointment.clientName}! Vas termin za masazu je zakazan za ${formatDate(appointment.date)} u ${appointment.time}h. Vidimo se! - Masaze Tajana`,
+      reminder: `Podsetnik: Vas termin za masazu je za 1h (${appointment.time}h). Vidimo se! - Masaze Tajana`
+    };
+
+    const message = encodeURIComponent(messages[type]);
+    const phone = appointment.phone.replace(/\s/g, '');
+    
+    window.open(`sms:${phone}?body=${message}`, '_blank');
+  };
+
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const options = { day: 'numeric', month: 'long', year: 'numeric' };
+    const formatted = date.toLocaleDateString('sr-Latn-RS', options);
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
+  const formatMonthYear = (date) => {
+    const options = { month: 'long', year: 'numeric' };
+    const formatted = date.toLocaleDateString('sr-Latn-RS', options);
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
+  const formatDayDate = (date) => {
+    const options = { weekday: 'long', day: 'numeric', month: 'long' };
+    const formatted = date.toLocaleDateString('sr-Latn-RS', options);
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  };
+
+  const getDaysInMonth = (date) => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDayOfWeek = firstDay.getDay();
+    
+    return { daysInMonth, startingDayOfWeek: startingDayOfWeek === 0 ? 6 : startingDayOfWeek - 1 };
+  };
+
+  const getAppointmentsForDate = (dateStr) => {
+    return appointments.filter(apt => apt.date === dateStr).sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  const changeMonth = (delta) => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + delta, 1));
+  };
+
+  const getMonthAppointments = () => {
+    const month = currentMonth.getMonth();
+    const year = currentMonth.getFullYear();
+    return appointments.filter(apt => {
+      const aptDate = new Date(apt.date);
+      return aptDate.getMonth() === month && aptDate.getFullYear() === year;
+    });
+  };
+
+  const getStatistics = () => {
+    const monthAppts = getMonthAppointments();
+    const count = monthAppts.length;
+    
+    const clientFrequency = {};
+    monthAppts.forEach(apt => {
+      clientFrequency[apt.clientName] = (clientFrequency[apt.clientName] || 0) + 1;
+    });
+
+    return { count, clientFrequency };
+  };
+
+  const dayNames = {
+    monday: 'Ponedeljak',
+    tuesday: 'Utorak',
+    wednesday: 'Sreda',
+    thursday: 'Cetvrtak',
+    friday: 'Petak',
+    saturday: 'Subota',
+    sunday: 'Nedelja'
+  };
+
+  const theme = {
+    bg: darkMode ? 'bg-gray-900' : 'bg-gray-50',
+    text: darkMode ? 'text-gray-100' : 'text-gray-900',
+    card: darkMode ? 'bg-gray-800' : 'bg-white',
+    border: darkMode ? 'border-gray-700' : 'border-gray-200',
+    primary: darkMode ? 'bg-blue-600 hover:bg-blue-700' : 'bg-blue-500 hover:bg-blue-600',
+    secondary: darkMode ? 'bg-gray-700' : 'bg-gray-200',
+    accent: darkMode ? 'text-blue-400' : 'text-blue-600',
+    muted: darkMode ? 'text-gray-400' : 'text-gray-600',
+  };
+
+  const Icon = ({ name, size = 24, className = '' }) => {
+    return React.createElement('i', {
+      'data-lucide': name,
+      className: className,
+      style: { width: size, height: size }
+    });
+  };
+
+  useEffect(() => {
+    if (typeof lucide !== 'undefined') {
+      lucide.createIcons();
+    }
+  });
+
+  if (showSplash) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="mb-8 animate-pulse">
+            <div className="w-40 h-40 mx-auto bg-white rounded-full flex items-center justify-center shadow-2xl p-4">
+              <img 
+                src="logo.png" 
+                alt="Logo"
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  e.target.outerHTML = `
+                    <svg class="w-32 h-32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M100 80C100 80 120 60 140 70C160 80 150 100 140 110L100 140" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle cx="120" cy="120" r="15" stroke="#D4AF37" stroke-width="4"/>
+                      <path d="M60 100C60 100 80 90 100 95C120 100 110 120 100 130" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M80 140L120 160" stroke="#D4AF37" stroke-width="4" stroke-linecap="round"/>
+                    </svg>
+                  `;
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`min-h-screen ${theme.bg} ${theme.text} transition-colors duration-300`}>
+      <div className={`${theme.primary} p-4 shadow-lg`}>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold text-white">Masaže Tajana</h1>
+          <div className="flex gap-2">
+            <button onClick={() => setShowBlockModal(true)} className="text-white p-2 hover:bg-white/20 rounded-lg">
+              <Icon name="settings" size={24} />
+            </button>
+            <button onClick={toggleTheme} className="text-white p-2 hover:bg-white/20 rounded-lg">
+              <Icon name={darkMode ? 'sun' : 'moon'} size={24} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="p-4 pb-24">
+        {activeTab === 'calendar' && (
+          <div>
+            <div className="flex items-center justify-between mb-6">
+              <button onClick={() => changeMonth(-1)} className={`p-2 rounded-lg ${theme.secondary}`}>
+                <Icon name="chevron-left" size={24} />
+              </button>
+              <h2 className="text-xl font-semibold">
+                {formatMonthYear(currentMonth)}
+              </h2>
+              <button onClick={() => changeMonth(1)} className={`p-2 rounded-lg ${theme.secondary}`}>
+                <Icon name="chevron-right" size={24} />
+              </button>
+            </div>
+
+            <button
+              onClick={() => setShowAddModal(true)}
+              className={`w-full ${theme.primary} text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium mb-6`}
+            >
+              <Icon name="plus" size={20} /> Novi termin
+            </button>
+
+            <div className="mb-6">
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['Pon', 'Uto', 'Sre', 'Cet', 'Pet', 'Sub', 'Ned'].map(day => (
+                  <div key={day} className={`text-center text-sm font-semibold ${theme.muted} py-2`}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+              
+              <div className="grid grid-cols-7 gap-1">
+                {(() => {
+                  const { daysInMonth, startingDayOfWeek } = getDaysInMonth(currentMonth);
+                  const days = [];
+                  
+                  for (let i = 0; i < startingDayOfWeek; i++) {
+                    days.push(<div key={`empty-${i}`} className="aspect-square" />);
+                  }
+                  
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const dayAppts = getAppointmentsForDate(dateStr);
+                    const isToday = dateStr === new Date().toISOString().split('T')[0];
+                    
+                    days.push(
+                      <button
+                        key={day}
+                        onClick={() => setSelectedDate(new Date(dateStr))}
+                        className={`aspect-square p-1 rounded-lg ${theme.card} ${theme.border} border relative hover:shadow-lg transition-shadow ${isToday ? 'ring-2 ring-blue-500' : ''}`}
+                      >
+                        <div className="text-sm font-semibold">{day}</div>
+                        {dayAppts.length > 0 && (
+                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                            {dayAppts.slice(0, 3).map((apt, i) => (
+                              <div key={i} className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    );
+                  }
+                  
+                  return days;
+                })()}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-3">
+                {formatDayDate(selectedDate)}
+              </h3>
+              
+              {(() => {
+                const dateStr = selectedDate.toISOString().split('T')[0];
+                const dayAppts = getAppointmentsForDate(dateStr);
+                
+                if (dayAppts.length === 0) {
+                  return (
+                    <div className={`${theme.card} ${theme.border} border rounded-lg p-6 text-center ${theme.muted}`}>
+                      <Icon name="calendar" size={36} className="mx-auto mb-2 opacity-50" />
+                      <p>Nema termina za ovaj dan</p>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div className="space-y-3">
+                    {dayAppts.map(apt => (
+                      <div key={apt.id} className={`${theme.card} ${theme.border} border rounded-lg p-4`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className={`font-semibold text-lg ${theme.accent}`}>{apt.clientName}</h4>
+                            <p className={`text-sm ${theme.muted} flex items-center gap-2 mt-1`}>
+                              <Icon name="clock" size={14} /> {apt.time}h
+                            </p>
+                            <p className={`text-sm ${theme.muted} flex items-center gap-2`}>
+                              <Icon name="phone" size={14} /> {apt.phone}
+                            </p>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => sendSMS(apt, 'reminder')}
+                              className={theme.accent}
+                            >
+                              <Icon name="message-square" size={20} />
+                            </button>
+                            <button
+                              onClick={() => deleteAppointment(apt.id)}
+                              className="text-red-500"
+                            >
+                              <Icon name="trash-2" size={20} />
+                            </button>
+                          </div>
+                        </div>
+                        {apt.notes && (
+                          <p className={`text-sm ${theme.muted} mt-2 italic`}>Napomena: {apt.notes}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'analytics' && (
+          <div>
+            <h2 className="text-xl font-semibold mb-6">Analitika</h2>
+            
+            {(() => {
+              const stats = getStatistics();
+              return (
+                <>
+                  <div className={`${theme.card} ${theme.border} border rounded-lg p-6 mb-6 text-center`}>
+                    <p className={`text-sm ${theme.muted} mb-2`}>Ukupno termina ovog meseca</p>
+                    <p className={`text-5xl font-bold ${theme.accent}`}>{stats.count}</p>
+                  </div>
+
+                  <div className={`${theme.card} ${theme.border} border rounded-lg p-4 mb-6`}>
+                    <h3 className="font-semibold mb-4">Top klijenti ovog meseca</h3>
+                    {Object.keys(stats.clientFrequency).length === 0 ? (
+                      <p className={`${theme.muted} text-center py-4`}>Nema podataka</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {Object.entries(stats.clientFrequency)
+                          .sort(([,a], [,b]) => b - a)
+                          .slice(0, 10)
+                          .map(([name, count]) => (
+                            <div key={name} className={`flex justify-between items-center py-2 border-b ${theme.border} last:border-0`}>
+                              <span>{name}</span>
+                              <span className={`font-semibold ${theme.accent}`}>{count}x</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className={`${theme.card} ${theme.border} border rounded-lg p-4`}>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="font-semibold">Blokirani periodi</h3>
+                    </div>
+                    {blockedPeriods.length === 0 ? (
+                      <p className={`${theme.muted} text-center py-4`}>Nema blokiranih perioda</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {blockedPeriods.map(period => (
+                          <div key={period.id} className={`flex justify-between items-start py-2 border-b ${theme.border} last:border-0`}>
+                            <div className="flex-1">
+                              {period.type === 'recurring' ? (
+                                <>
+                                  <p className="font-medium">{period.days.map(d => dayNames[d]).join(', ')}</p>
+                                  <p className={`text-sm ${theme.muted}`}>{period.startTime} - {period.endTime}</p>
+                                </>
+                              ) : (
+                                <>
+                                  <p className="font-medium">{formatDate(period.startDate)} - {formatDate(period.endDate)}</p>
+                                  <p className={`text-sm ${theme.muted}`}>{period.startTime} - {period.endTime}</p>
+                                </>
+                              )}
+                              {period.description && (
+                                <p className={`text-sm ${theme.muted} italic`}>{period.description}</p>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => deleteBlockedPeriod(period.id)}
+                              className="text-red-500 ml-2"
+                            >
+                              <Icon name="trash-2" size={18} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        )}
+      </div>
+
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className={`${theme.card} rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Novi termin</h3>
+              <button onClick={() => setShowAddModal(false)} className={theme.muted}>
+                <Icon name="x" size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Ime klijenta *</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newAppointment.clientName}
+                    onChange={(e) => setNewAppointment({...newAppointment, clientName: e.target.value})}
+                    className={`flex-1 ${theme.secondary} rounded-lg px-3 py-2`}
+                    placeholder="Ana Petrovic"
+                  />
+                  <button
+                    onClick={pickContact}
+                    className={`${theme.primary} text-white px-3 rounded-lg`}
+                    title="Izaberi iz kontakata"
+                  >
+                    <Icon name="users" size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Telefon *</label>
+                <input
+                  type="tel"
+                  value={newAppointment.phone}
+                  onChange={(e) => setNewAppointment({...newAppointment, phone: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                  placeholder="0641234567"
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Datum *</label>
+                <input
+                  type="date"
+                  value={newAppointment.date}
+                  onChange={(e) => setNewAppointment({...newAppointment, date: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Vreme *</label>
+                <input
+                  type="time"
+                  value={newAppointment.time}
+                  onChange={(e) => setNewAppointment({...newAppointment, time: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                />
+                {newAppointment.date && newAppointment.time && isTimeBlocked(newAppointment.date, newAppointment.time) && (
+                  <p className="text-sm text-orange-500 mt-1">⚠️ Ovaj termin je u blokirano vreme</p>
+                )}
+              </div>
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Napomena</label>
+                <textarea
+                  value={newAppointment.notes}
+                  onChange={(e) => setNewAppointment({...newAppointment, notes: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2 h-20`}
+                  placeholder="Dodatne informacije..."
+                />
+              </div>
+              <button
+                onClick={addAppointment}
+                className={`w-full ${theme.primary} text-white font-semibold py-3 rounded-lg`}
+              >
+                Zakazi termin
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBlockModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className={`${theme.card} rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold">Blokiraj period</h3>
+              <button onClick={() => setShowBlockModal(false)} className={theme.muted}>
+                <Icon name="x" size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-2`}>Tip blokiranja</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setNewBlock({...newBlock, type: 'recurring', days: [], startDate: '', endDate: ''})}
+                    className={`flex-1 py-2 rounded-lg font-medium ${newBlock.type === 'recurring' ? theme.primary + ' text-white' : theme.secondary}`}
+                  >
+                    Ponavljajuce
+                  </button>
+                  <button
+                    onClick={() => setNewBlock({...newBlock, type: 'oneTime', days: []})}
+                    className={`flex-1 py-2 rounded-lg font-medium ${newBlock.type === 'oneTime' ? theme.primary + ' text-white' : theme.secondary}`}
+                  >
+                    Jednokratno
+                  </button>
+                </div>
+              </div>
+
+              {newBlock.type === 'recurring' && (
+                <div>
+                  <label className={`block text-sm ${theme.muted} mb-2`}>Dani u nedelji</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(dayNames).map(([key, name]) => (
+                      <button
+                        key={key}
+                        onClick={() => toggleDay(key)}
+                        className={`py-2 px-3 rounded-lg text-sm font-medium ${
+                          newBlock.days.includes(key) 
+                            ? theme.primary + ' text-white' 
+                            : theme.secondary
+                        }`}
+                      >
+                        {name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {newBlock.type === 'oneTime' && (
+                <>
+                  <div>
+                    <label className={`block text-sm ${theme.muted} mb-1`}>Od datuma</label>
+                    <input
+                      type="date"
+                      value={newBlock.startDate}
+                      onChange={(e) => setNewBlock({...newBlock, startDate: e.target.value})}
+                      className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                    />
+                  </div>
+                  <div>
+                    <label className={`block text-sm ${theme.muted} mb-1`}>Do datuma</label>
+                    <input
+                      type="date"
+                      value={newBlock.endDate}
+                      onChange={(e) => setNewBlock({...newBlock, endDate: e.target.value})}
+                      className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Od vremena</label>
+                <input
+                  type="time"
+                  value={newBlock.startTime}
+                  onChange={(e) => setNewBlock({...newBlock, startTime: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Do vremena</label>
+                <input
+                  type="time"
+                  value={newBlock.endTime}
+                  onChange={(e) => setNewBlock({...newBlock, endTime: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                />
+              </div>
+
+              <div>
+                <label className={`block text-sm ${theme.muted} mb-1`}>Opis (opciono)</label>
+                <input
+                  type="text"
+                  value={newBlock.description}
+                  onChange={(e) => setNewBlock({...newBlock, description: e.target.value})}
+                  className={`w-full ${theme.secondary} rounded-lg px-3 py-2`}
+                  placeholder="npr. Redovan posao"
+                />
+              </div>
+
+              <button
+                onClick={addBlockedPeriod}
+                className={`w-full ${theme.primary} text-white font-semibold py-3 rounded-lg`}
+              >
+                Sacuvaj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`fixed bottom-0 left-0 right-0 ${theme.card} border-t ${theme.border} px-4 py-3 shadow-lg`}>
+        <div className="flex justify-around">
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={`flex flex-col items-center gap-1 ${
+              activeTab === 'calendar' ? theme.accent : theme.muted
+            }`}
+          >
+            <Icon name="calendar" size={24} />
+            <span className="text-xs">Kalendar</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`flex flex-col items-center gap-1 ${
+              activeTab === 'analytics' ? theme.accent : theme.muted
+            }`}
+          >
+            <Icon name="trending-up" size={24} />
+            <span className="text-xs">Analitika</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+ReactDOM.render(<MasazeTajana />, document.getElementById('root'));
   </script>
 
   <script>
-    // Register Service Worker
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
+        navigator.serviceWorker.register('service-worker.js')
           .then(reg => console.log('Service Worker registered'))
-          .catch(err => console.log('Service Worker registration failed:', err));
+          .catch(err => console.log('Service Worker error:', err));
       });
     }
   </script>
