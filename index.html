@@ -5,8 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Organizator termina za Masaže Tajana">
   <meta name="theme-color" content="#2563eb">
-  <link rel="manifest" href="./manifest.json">
-  <link rel="icon" type="image/png" href="./icon-192.png">
+  <link rel="manifest" href="/masaze-tajana/manifest.json">
+  <link rel="icon" type="image/png" href="/masaze-tajana/icon-192.png">
+  <link rel="apple-touch-icon" href="/masaze-tajana/icon-192.png">
   <title>Masaže Tajana</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -899,13 +900,13 @@ ReactDOM.render(<MasazeTajana />, document.getElementById('root'));
   </script>
 
   <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('Service Worker registered'))
-          .catch(err => console.log('Service Worker error:', err));
-      });
-    }
-  </script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/masaze-tajana/service-worker.js')
+        .then(reg => console.log('Service Worker registered'))
+        .catch(err => console.log('Service Worker error:', err));
+    });
+  }
+ </script>
 </body>
 </html>
