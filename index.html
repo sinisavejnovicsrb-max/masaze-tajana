@@ -5,10 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Organizator termina za Masaže Tajana">
   <meta name="theme-color" content="#2563eb">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" type="image/png" href="icon-192.png">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" type="image/png" href="./icon-192.png">
   <title>Masaže Tajana</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { margin: 0; padding: 0; }
+  </style>
 </head>
 <body>
   <div id="root"></div>
@@ -18,16 +21,102 @@
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   
   <script type="text/babel">
-    const { useState, useEffect } = React;
-    const { Calendar, Clock, Users, TrendingUp, Plus, X, Bell, Phone, MessageSquare, Edit2, Trash2, Moon, Sun, ChevronLeft, ChevronRight, Ban, Settings } = window.lucide;
+const { useState, useEffect } = React;
 
-    // Importuj Lucide ikonice
-    lucide.createIcons();
-  </script>
+// SVG Ikonice kao komponente
+const Icons = {
+  Calendar: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+      <line x1="16" y1="2" x2="16" y2="6"></line>
+      <line x1="8" y1="2" x2="8" y2="6"></line>
+      <line x1="3" y1="10" x2="21" y2="10"></line>
+    </svg>
+  ),
+  Clock: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10"></circle>
+      <polyline points="12 6 12 12 16 14"></polyline>
+    </svg>
+  ),
+  Phone: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+    </svg>
+  ),
+  MessageSquare: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+  ),
+  Trash: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="3 6 5 6 21 6"></polyline>
+      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    </svg>
+  ),
+  Plus: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
+  ),
+  X: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <line x1="18" y1="6" x2="6" y2="18"></line>
+      <line x1="6" y1="6" x2="18" y2="18"></line>
+    </svg>
+  ),
+  ChevronLeft: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="15 18 9 12 15 6"></polyline>
+    </svg>
+  ),
+  ChevronRight: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  ),
+  Sun: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  ),
+  Moon: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+    </svg>
+  ),
+  Settings: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="3"></circle>
+      <path d="M12 1v6m0 6v6m8.66-15.66l-4.24 4.24m-4.24 4.24l-4.24 4.24m15.66-8.66l-6 1.02m-6 1.02l-6 1.02"></path>
+    </svg>
+  ),
+  TrendingUp: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+      <polyline points="17 6 23 6 23 12"></polyline>
+    </svg>
+  ),
+  Users: ({ size = 24, className = '' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+      <circle cx="9" cy="7" r="4"></circle>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+    </svg>
+  ),
+};
 
-  <script src="https://unpkg.com/lucide@latest"></script>
-
-  <script type="text/babel">
 const MasazeTajana = () => {
   const [activeTab, setActiveTab] = useState('calendar');
   const [appointments, setAppointments] = useState([]);
@@ -60,7 +149,6 @@ const MasazeTajana = () => {
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500);
     loadData();
-    registerServiceWorker();
     checkUpcomingAppointments();
     
     const interval = setInterval(checkUpcomingAppointments, 60000);
@@ -70,24 +158,18 @@ const MasazeTajana = () => {
     };
   }, []);
 
-  const registerServiceWorker = async () => {
-    if ('serviceWorker' in navigator) {
-      try {
-        console.log('Service Worker ready for registration');
-      } catch (error) {
-        console.log('Service Worker registration failed:', error);
-      }
-    }
-  };
-
   const loadData = () => {
-    const savedAppts = localStorage.getItem('massageAppointments');
-    const savedBlocked = localStorage.getItem('blockedPeriods');
-    const savedTheme = localStorage.getItem('darkMode');
-    
-    if (savedAppts) setAppointments(JSON.parse(savedAppts));
-    if (savedBlocked) setBlockedPeriods(JSON.parse(savedBlocked));
-    if (savedTheme !== null) setDarkMode(savedTheme === 'true');
+    try {
+      const savedAppts = localStorage.getItem('massageAppointments');
+      const savedBlocked = localStorage.getItem('blockedPeriods');
+      const savedTheme = localStorage.getItem('darkMode');
+      
+      if (savedAppts) setAppointments(JSON.parse(savedAppts));
+      if (savedBlocked) setBlockedPeriods(JSON.parse(savedBlocked));
+      if (savedTheme !== null) setDarkMode(savedTheme === 'true');
+    } catch (e) {
+      console.error('Error loading data:', e);
+    }
   };
 
   const saveAppointments = (appts) => {
@@ -121,12 +203,6 @@ const MasazeTajana = () => {
     });
   };
 
-  const requestNotificationPermission = async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      await Notification.requestPermission();
-    }
-  };
-
   const pickContact = async () => {
     if ('contacts' in navigator && 'ContactsManager' in window) {
       try {
@@ -143,7 +219,7 @@ const MasazeTajana = () => {
           });
         }
       } catch (err) {
-        console.log('Contact picker error:', err);
+        console.log('Contact picker not available');
       }
     } else {
       alert('Pretraživanje kontakata nije dostupno na ovom uređaju');
@@ -354,41 +430,18 @@ const MasazeTajana = () => {
     muted: darkMode ? 'text-gray-400' : 'text-gray-600',
   };
 
-  const Icon = ({ name, size = 24, className = '' }) => {
-    return React.createElement('i', {
-      'data-lucide': name,
-      className: className,
-      style: { width: size, height: size }
-    });
-  };
-
-  useEffect(() => {
-    if (typeof lucide !== 'undefined') {
-      lucide.createIcons();
-    }
-  });
-
   if (showSplash) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center">
         <div className="text-center">
           <div className="mb-8 animate-pulse">
             <div className="w-40 h-40 mx-auto bg-white rounded-full flex items-center justify-center shadow-2xl p-4">
-              <img 
-                src="logo.png" 
-                alt="Logo"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  e.target.outerHTML = `
-                    <svg class="w-32 h-32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M100 80C100 80 120 60 140 70C160 80 150 100 140 110L100 140" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                      <circle cx="120" cy="120" r="15" stroke="#D4AF37" stroke-width="4"/>
-                      <path d="M60 100C60 100 80 90 100 95C120 100 110 120 100 130" stroke="#D4AF37" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-                      <path d="M80 140L120 160" stroke="#D4AF37" stroke-width="4" stroke-linecap="round"/>
-                    </svg>
-                  `;
-                }}
-              />
+              <svg className="w-32 h-32" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M100 80C100 80 120 60 140 70C160 80 150 100 140 110L100 140" stroke="#D4AF37" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="120" cy="120" r="15" stroke="#D4AF37" strokeWidth="4"/>
+                <path d="M60 100C60 100 80 90 100 95C120 100 110 120 100 130" stroke="#D4AF37" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M80 140L120 160" stroke="#D4AF37" strokeWidth="4" strokeLinecap="round"/>
+              </svg>
             </div>
           </div>
         </div>
@@ -403,10 +456,10 @@ const MasazeTajana = () => {
           <h1 className="text-2xl font-bold text-white">Masaže Tajana</h1>
           <div className="flex gap-2">
             <button onClick={() => setShowBlockModal(true)} className="text-white p-2 hover:bg-white/20 rounded-lg">
-              <Icon name="settings" size={24} />
+              <Icons.Settings size={24} />
             </button>
             <button onClick={toggleTheme} className="text-white p-2 hover:bg-white/20 rounded-lg">
-              <Icon name={darkMode ? 'sun' : 'moon'} size={24} />
+              {darkMode ? <Icons.Sun size={24} /> : <Icons.Moon size={24} />}
             </button>
           </div>
         </div>
@@ -417,13 +470,13 @@ const MasazeTajana = () => {
           <div>
             <div className="flex items-center justify-between mb-6">
               <button onClick={() => changeMonth(-1)} className={`p-2 rounded-lg ${theme.secondary}`}>
-                <Icon name="chevron-left" size={24} />
+                <Icons.ChevronLeft size={24} />
               </button>
               <h2 className="text-xl font-semibold">
                 {formatMonthYear(currentMonth)}
               </h2>
               <button onClick={() => changeMonth(1)} className={`p-2 rounded-lg ${theme.secondary}`}>
-                <Icon name="chevron-right" size={24} />
+                <Icons.ChevronRight size={24} />
               </button>
             </div>
 
@@ -431,7 +484,7 @@ const MasazeTajana = () => {
               onClick={() => setShowAddModal(true)}
               className={`w-full ${theme.primary} text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 font-medium mb-6`}
             >
-              <Icon name="plus" size={20} /> Novi termin
+              <Icons.Plus size={20} /> Novi termin
             </button>
 
             <div className="mb-6">
@@ -492,7 +545,7 @@ const MasazeTajana = () => {
                 if (dayAppts.length === 0) {
                   return (
                     <div className={`${theme.card} ${theme.border} border rounded-lg p-6 text-center ${theme.muted}`}>
-                      <Icon name="calendar" size={36} className="mx-auto mb-2 opacity-50" />
+                      <Icons.Calendar size={36} className="mx-auto mb-2 opacity-50" />
                       <p>Nema termina za ovaj dan</p>
                     </div>
                   );
@@ -506,10 +559,10 @@ const MasazeTajana = () => {
                           <div>
                             <h4 className={`font-semibold text-lg ${theme.accent}`}>{apt.clientName}</h4>
                             <p className={`text-sm ${theme.muted} flex items-center gap-2 mt-1`}>
-                              <Icon name="clock" size={14} /> {apt.time}h
+                              <Icons.Clock size={14} /> {apt.time}h
                             </p>
                             <p className={`text-sm ${theme.muted} flex items-center gap-2`}>
-                              <Icon name="phone" size={14} /> {apt.phone}
+                              <Icons.Phone size={14} /> {apt.phone}
                             </p>
                           </div>
                           <div className="flex gap-2">
@@ -517,17 +570,17 @@ const MasazeTajana = () => {
                               onClick={() => sendSMS(apt, 'reminder')}
                               className={theme.accent}
                             >
-                              <Icon name="message-square" size={20} />
+                              <Icons.MessageSquare size={20} />
                             </button>
                             <button
                               onClick={() => deleteAppointment(apt.id)}
                               className="text-red-500"
                             >
-                              <Icon name="trash-2" size={20} />
+                              <Icons.Trash size={20} />
                             </button>
                           </div>
                         </div>
-                        {apt.notes && (
+{apt.notes && (
                           <p className={`text-sm ${theme.muted} mt-2 italic`}>Napomena: {apt.notes}</p>
                         )}
                       </div>
@@ -601,7 +654,7 @@ const MasazeTajana = () => {
                               onClick={() => deleteBlockedPeriod(period.id)}
                               className="text-red-500 ml-2"
                             >
-                              <Icon name="trash-2" size={18} />
+                              <Icons.Trash size={18} />
                             </button>
                           </div>
                         ))}
@@ -621,7 +674,7 @@ const MasazeTajana = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Novi termin</h3>
               <button onClick={() => setShowAddModal(false)} className={theme.muted}>
-                <Icon name="x" size={24} />
+                <Icons.X size={24} />
               </button>
             </div>
 
@@ -641,7 +694,7 @@ const MasazeTajana = () => {
                     className={`${theme.primary} text-white px-3 rounded-lg`}
                     title="Izaberi iz kontakata"
                   >
-                    <Icon name="users" size={20} />
+                    <Icons.Users size={20} />
                   </button>
                 </div>
               </div>
@@ -689,6 +742,7 @@ const MasazeTajana = () => {
                   placeholder="Dodatne informacije..."
                 />
               </div>
+
               <button
                 onClick={addAppointment}
                 className={`w-full ${theme.primary} text-white font-semibold py-3 rounded-lg`}
@@ -706,7 +760,7 @@ const MasazeTajana = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold">Blokiraj period</h3>
               <button onClick={() => setShowBlockModal(false)} className={theme.muted}>
-                <Icon name="x" size={24} />
+                <Icons.X size={24} />
               </button>
             </div>
 
@@ -823,7 +877,7 @@ const MasazeTajana = () => {
               activeTab === 'calendar' ? theme.accent : theme.muted
             }`}
           >
-            <Icon name="calendar" size={24} />
+            <Icons.Calendar size={24} />
             <span className="text-xs">Kalendar</span>
           </button>
           <button
@@ -832,7 +886,7 @@ const MasazeTajana = () => {
               activeTab === 'analytics' ? theme.accent : theme.muted
             }`}
           >
-            <Icon name="trending-up" size={24} />
+            <Icons.TrendingUp size={24} />
             <span className="text-xs">Analitika</span>
           </button>
         </div>
@@ -847,7 +901,7 @@ ReactDOM.render(<MasazeTajana />, document.getElementById('root'));
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('service-worker.js')
+        navigator.serviceWorker.register('./service-worker.js')
           .then(reg => console.log('Service Worker registered'))
           .catch(err => console.log('Service Worker error:', err));
       });
